@@ -1,1 +1,2 @@
-# cgcnn_Adsorption_prediction
+# Paper title and data availability
+This repository contains codes for the paper entitled "Crystal graph convolution neural networks for fast and accurate prediction of adsorption ability of Nb2CTx towards Pb(II) and Cd(II) ions" authored by Zeeshan Haider Jaffari, Ather Abbas, Muhammed Umer, Eun-Sik Kim and Kyung Hwa Cho, also known as the WEIL group at UNIST, Korea. File name "Raw_data" contains the data set of 2,600 crystal geometries for each heavy metal ions used in this study to build CGCNN model. Besides, The published article can be found on
