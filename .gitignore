@@ -1,0 +1,14 @@
+
+
+.ipynb_checkpoints/
+__pycache__/
+.idea/
+.vscode/
+
+
+*.png
+*.xlsx
+*.h5
+*.json
+*.csv
+

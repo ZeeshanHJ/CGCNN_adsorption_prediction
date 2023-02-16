@@ -1,0 +1,5 @@
+ai4water
+SeqMetrics
+easy_mpl
+torch==1.4.0
+torch==1.4.0
