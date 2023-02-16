@@ -2,9 +2,13 @@
 import os
 
 import site
+
+import pandas as pd
+
 site.addsitedir("D:\\mytools\\AI4Water")
 site.addsitedir("D:\\mytools\\easy_mpl")
 
+from torch import nn
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -18,7 +22,7 @@ from cgcnn.main import main
 
 class Args:
     data_options = [
-        os.path.join(os.getcwd(), "data", 'Cr_Hg_Pb_Cd_data'),
+        os.path.join(os.getcwd(), "data", "dft_data"),
         "20-Cd",
     ]
     task = 'regression'
@@ -55,7 +59,7 @@ if args.task == 'regression':
 else:
     best_mae_error = 0.
 
-history, results = main(args, best_mae_error)
+history, results, model = main(args, best_mae_error)
 
 
 fig, ax = plt.subplots()
