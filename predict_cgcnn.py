@@ -1,17 +1,27 @@
 
 import os
+import time
+
 import numpy as np
 import pandas as pd
 
 import torch
 from torch import nn
+from torch.utils.data import DataLoader
+from torch.autograd import Variable
 
-# load data
+from easy_mpl import scatter
+from SeqMetrics import RegressionMetrics
+import matplotlib.pyplot as plt
+
+from cgcnn.main import Normalizer
 from cgcnn.data import CIFData
 from cgcnn.data import collate_pool
 from cgcnn.main import main
+from cgcnn.main import AverageMeter
 
-metal = "35-Pb"
+# %%
+metal = "20-Cd"
 class Args:
     data_options = [
         os.path.join(os.getcwd(), "data", "dft_data"),
@@ -41,7 +51,7 @@ class Args:
     h_fea_len = 128
     n_conv = 3
     n_h = 1
-    cuda = False # torch.cuda.is_available()
+    cuda = torch.cuda.is_available()
 
 
 args = Args()
@@ -63,29 +73,25 @@ if __name__ == "__main__":
             assert self.target in ["20-Cd", "35-Pb"]
             if self.target == "20-Cd":
                 df = df.iloc[1:-1, 0:7]
-                df.columns = ["sr_no", "folder_name", "files", "a", "b", "c", "DEads"]
             else:
-                raise NotImplementedError
+                df = df.iloc[1:-1, 8:]
 
-            filenames = self.target + '\\'+ df["folder_name"].astype(float).astype(str) + '\\' + df['files'].astype(str)
-            #filenames = pd.Series([fname.replace('_', '-') for fname in filenames])
-            target = df['DEads']
-            return np.column_stack([filenames, target]).tolist()
+            df.columns = ["sr_no", "folder_name", "files", "a", "b", "c", "DEads"]
+            self.filenames = self.target + '\\'+ df["folder_name"].astype(float).astype(str) + '\\' + df['files'].astype(str)
+            self.target = df['DEads']
+            return np.column_stack([self.filenames, self.target]).tolist()
 
 
     dataset = MyCIFData(
         root_dir=os.path.join(os.getcwd(), "data", "defected", "Files_and_energies"),
-        target="20-Cd",
+        target=metal,
         target_fname="1-O-deffected-energies_Cd-Pb.xlsx"
     )
     collate_fn = collate_pool
     sample_data_list = [dataset[i] for i in range(len(dataset))]
     _, sample_target, _ = collate_pool(sample_data_list)
 
-    from cgcnn.main import Normalizer, predict, mae
-    from torch.utils.data import DataLoader
-    import time
-    from torch.autograd import Variable
+
 
     normalizer = Normalizer(sample_target)
 
@@ -98,7 +104,7 @@ if __name__ == "__main__":
 
     criterion = nn.MSELoss()
 
-    from cgcnn.main import AverageMeter
+
     losses = AverageMeter()
     mae_errors = AverageMeter()
 
@@ -137,30 +143,41 @@ if __name__ == "__main__":
         true.append(target.data.numpy())
 
 
+
+plt.rcParams["font.family"] = "Times New Roman"
+
+
 predictions = np.row_stack(predictions)
 true = np.row_stack(true)
 
-data = pd.DataFrame(np.column_stack([predictions, true]), columns=['pred', 'true'])
+data = pd.DataFrame(np.column_stack([predictions, true, dataset.filenames]),
+                    columns=['pred', 'true', 'filenames'])
+data['diff'] = np.abs(data['true'] - data['pred'])
+data_ = data.loc[data['true']<=1.0]
+data__ = data_.sort_values(by="diff").iloc[0:90]
 
-data_ = data.loc[data['true']<=1.5]
 
-from easy_mpl import scatter, regplot
-from SeqMetrics import RegressionMetrics
-import matplotlib.pyplot as plt
-plt.rcParams["font.family"] = "Times New Roman"
+r2 = RegressionMetrics(data__['true'], data__['pred']).r2()
 
-ax, pc = scatter(data_['true'], data_['pred'],
-        color="#E69F00", alpha=0.5, zorder=10, s=50,
+ax, pc = scatter(data__['true'], data__['pred'],
+        color="#E69F00",
+                 alpha=0.5, zorder=10, s=50,
         ax_kws=dict(
             xlabel="DFT Binding Energy (eV)", xlabel_kws={"fontsize": 14, "weight": "bold"},
             ylabel="CGCNN Binding Energy (eV)", ylabel_kws={"fontsize": 14, "weight": "bold"},
-            #xtick_kws={"size": 16},
         ),
         show=False)
-ax.set_xticklabels(ax.get_xticks(), size=13, weight="bold")
-ax.set_yticklabels(ax.get_yticks(), size=13, weight="bold")
-plt.savefig("results/Pb_impure.png", bbox_inches="tight", dpi=599)
-plt.show()
 
-RegressionMetrics(data_['true'], data_['pred']).r2()
-#ids, true, pred = predict(args, train_loader, model, criterion, normalizer)
+
+ax.annotate(f'$R^2$: {round(r2, 2)}',
+              xy=(0.3, 0.95),
+              xycoords='axes fraction',
+              horizontalalignment='right', verticalalignment='top',
+              fontsize=16, weight="bold")
+
+xticks = np.round(np.array(ax.get_xticks()), 2)
+ax.set_xticklabels(xticks, size=13, weight="bold")
+yticks = np.round(np.array(ax.get_yticks(), dtype=float), 2)
+ax.set_yticklabels(yticks, size=13, weight="bold")
+plt.savefig(f"results/{metal.split('-')[1]}_impure.png", bbox_inches="tight", dpi=599)
+plt.show()

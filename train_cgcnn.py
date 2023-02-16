@@ -3,12 +3,8 @@ import os
 
 import site
 
-import pandas as pd
-
 site.addsitedir("D:\\mytools\\AI4Water")
-site.addsitedir("D:\\mytools\\easy_mpl")
 
-from torch import nn
 import numpy as np
 import matplotlib.pyplot as plt
 import torch

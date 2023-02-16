@@ -11,4 +11,8 @@ __pycache__/
 *.h5
 *.json
 *.csv
+*.jpg
+
+manuscript/
+results/
 
